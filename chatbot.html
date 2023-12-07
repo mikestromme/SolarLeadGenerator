@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Interface</title>
+    <style>
+        #chatbot {
+            width: 300px;
+            margin: auto;
+            font-family: Arial, sans-serif;
+        }
+        #chat-window {
+            height: 400px;
+            overflow: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        #chat-messages {
+            margin-bottom: 10px;
+        }
+        #chat-input {
+            width: 70%;
+            padding: 5px;
+        }
+        #send-btn {
+            width: 25%;
+            padding: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #send-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="chatbot">
+        <div id="chat-window">
+            <div id="chat-messages"></div>
+        </div>
+        <input type="text" id="chat-input" placeholder="Type your message here...">
+        <button id="send-btn">Send</button>
+    </div>
+
+    <script>
+        // Global variable to store the thread_id
+        let threadId = null;
+    
+        // Function to fetch thread_id from the /start endpoint
+        function fetchThreadId() {
+            fetch('/start')
+            .then(response => response.json())
+            .then(data => {
+                threadId = data.thread_id;
+                console.log("Thread ID fetched: ", threadId);
+            })
+            .catch(error => console.error('Error fetching thread ID:', error));
+        }
+    
+        // Call the function to fetch thread_id when the chatbot loads
+        document.addEventListener('DOMContentLoaded', fetchThreadId);
+    
+        // Event listener for the send button
+        document.getElementById('send-btn').addEventListener('click', function() {
+            var userInput = document.getElementById('chat-input').value;
+            document.getElementById('chat-input').value = ''; // Clear the input field
+    
+            if (userInput.trim() === '') return; // Don't send empty messages
+    
+            var chatMessages = document.getElementById('chat-messages');
+            var userMessage = document.createElement('div');
+            userMessage.textContent = 'You: ' + userInput;
+            chatMessages.appendChild(userMessage);
+    
+            if (threadId) {
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        message: userInput,
+                        thread_id: threadId 
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    var botMessage = document.createElement('div');
+                    botMessage.textContent = 'Bot: ' + data.response;
+                    chatMessages.appendChild(botMessage);
+                    chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to the bottom
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    var errorMessage = document.createElement('div');
+                    errorMessage.textContent = 'Error: Could not get a response.';
+                    chatMessages.appendChild(errorMessage);
+                });
+            } else {
+                console.error('Error: Thread ID is not set.');
+                var errorMessage = document.createElement('div');
+                errorMessage.textContent = 'Error: Chatbot is not initialized properly.';
+                chatMessages.appendChild(errorMessage);
+            }
+        });
+    </script>
+    
+    
+</body>
+</html>
+
+  
